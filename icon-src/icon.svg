@@ -6,11 +6,11 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g stroke="#38bdf8" stroke-width="28" stroke-linecap="round" fill="none">
-    <line x1="96" y1="256" x2="416" y2="256"/>
-    <line x1="150" y1="176" x2="150" y2="336"/>
-    <line x1="362" y1="176" x2="362" y2="336"/>
-    <line x1="110" y1="206" x2="110" y2="306"/>
-    <line x1="402" y1="206" x2="402" y2="306"/>
+  <g stroke="#38bdf8" stroke-width="30" stroke-linecap="round" fill="none">
+    <line x1="100" y1="256" x2="412" y2="256"/>
+    <line x1="156" y1="168" x2="156" y2="344"/>
+    <line x1="356" y1="168" x2="356" y2="344"/>
+    <line x1="112" y1="204" x2="112" y2="308"/>
+    <line x1="400" y1="204" x2="400" y2="308"/>
   </g>
 </svg>

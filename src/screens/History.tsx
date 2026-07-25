@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/db'
 import type { Exercise, Session, SetEntry } from '../db/types'
 import { useSettings } from '../db/useSettings'
 import { lbToDisplay } from '../lib/units'
+import { WeightTrendChart, type TrendPoint } from '../components/WeightTrendChart'
+
+const MAX_CHART_POINTS = 20
 
 interface SessionGroup {
   session: Session
@@ -47,6 +50,18 @@ export function History() {
       .sort((a, b) => new Date(b.session.date).getTime() - new Date(a.session.date).getTime())
   }, [selectedId])
 
+  const units = settings?.units ?? 'lb'
+  const chartPoints: TrendPoint[] = useMemo(() => {
+    if (!groups) return []
+    return [...groups]
+      .sort((a, b) => new Date(a.session.date).getTime() - new Date(b.session.date).getTime())
+      .slice(-MAX_CHART_POINTS)
+      .map((g) => ({
+        date: g.session.date,
+        weight: lbToDisplay(Math.max(...g.sets.map((s) => s.weight)), units),
+      }))
+  }, [groups, units])
+
   if (!favorites || !settings) return null
 
   if (favorites.length === 0) {
@@ -79,7 +94,9 @@ export function History() {
 
       {selectedExercise && groups && groups.length > 0 ? (
         <>
-          <TrendLine groups={groups} units={settings.units} />
+          <div className="mt-4">
+            <WeightTrendChart points={chartPoints} unit={settings.units} />
+          </div>
           <div className="mt-4 flex flex-col gap-3">
             {groups.map((g) => (
               <div key={g.session.id} className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3">
@@ -101,22 +118,6 @@ export function History() {
       ) : (
         <p className="mt-8 text-center text-sm text-slate-500">No logged sessions for this exercise yet.</p>
       )}
-    </div>
-  )
-}
-
-function TrendLine({ groups, units }: { groups: SessionGroup[]; units: 'lb' | 'kg' }) {
-  const recent = [...groups]
-    .slice(0, 6)
-    .reverse()
-    .map((g) => Math.max(...g.sets.map((s) => s.weight)))
-
-  return (
-    <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3">
-      <div className="text-xs uppercase tracking-wide text-slate-500">Top set trend</div>
-      <div className="mt-1 text-sm font-semibold tabular-nums text-sky-400">
-        {recent.map((w) => `${lbToDisplay(w, units)}`).join(' → ')} {units}
-      </div>
     </div>
   )
 }
