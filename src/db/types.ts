@@ -58,8 +58,17 @@ export interface Exercise {
 export interface Session {
   id?: number
   date: string // ISO timestamp, session start
-  bodyPart: BodyPart
+  bodyParts: BodyPart[] // one or more — a routine can span several
+  label: string // display name at the time: a routine's name, or a single body part's label
+  routineId?: number // set when started from a saved routine; absent for manual/ad-hoc sessions
   completedAt?: string
+}
+
+export interface Routine {
+  id?: number
+  name: string
+  bodyParts: BodyPart[]
+  sortOrder: number
 }
 
 export interface SetEntry {
@@ -79,4 +88,5 @@ export interface AppSettings {
   id: 'settings' // singleton row
   units: Units
   onboardingComplete: boolean
+  weeklySchedule: (number | null)[] // 7 slots, Sun–Sat; each a routines.id or null (rest day)
 }

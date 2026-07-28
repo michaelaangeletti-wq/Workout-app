@@ -119,7 +119,13 @@ export function Settings() {
         {importMessage && <p className="mt-2 text-xs text-slate-400">{importMessage}</p>}
       </section>
 
-      <section className="mt-6">
+      <section className="mt-6 flex flex-col gap-2">
+        <Link
+          to="/routines"
+          className="block rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-200"
+        >
+          Manage Routines & Weekly Schedule →
+        </Link>
         <Link
           to="/install-help"
           className="block rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-200"
