@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '../db/db'
+import { db, clearHistory } from '../db/db'
 import { BODY_PARTS, EQUIPMENT_LABELS, EQUIPMENT_DEFAULT_WEIGHT } from '../db/types'
 import type { BodyPart, EquipmentType, Exercise, Units } from '../db/types'
 import { useSettings } from '../db/useSettings'
@@ -14,6 +14,8 @@ export function Settings() {
   const [importing, setImporting] = useState(false)
   const [importMessage, setImportMessage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [confirmingClear, setConfirmingClear] = useState(false)
+  const [clearMessage, setClearMessage] = useState<string | null>(null)
 
   if (!settings || !exercises) return null
 
@@ -30,6 +32,16 @@ export function Settings() {
     } finally {
       setImporting(false)
     }
+  }
+
+  const handleClearHistory = async () => {
+    if (!confirmingClear) {
+      setConfirmingClear(true)
+      return
+    }
+    await clearHistory()
+    setConfirmingClear(false)
+    setClearMessage('History cleared.')
   }
 
   return (
@@ -117,6 +129,24 @@ export function Settings() {
           />
         </div>
         {importMessage && <p className="mt-2 text-xs text-slate-400">{importMessage}</p>}
+      </section>
+
+      <section className="mt-6">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Danger Zone</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Permanently deletes every logged session and set. Exercises, routines, and settings are kept.
+        </p>
+        <button
+          type="button"
+          onClick={handleClearHistory}
+          onBlur={() => setConfirmingClear(false)}
+          className={`mt-2 w-full rounded-xl py-2.5 text-sm font-semibold ${
+            confirmingClear ? 'bg-red-600 text-white' : 'border border-red-900 text-red-400'
+          }`}
+        >
+          {confirmingClear ? 'Tap again to permanently clear history' : 'Clear History'}
+        </button>
+        {clearMessage && <p className="mt-2 text-xs text-slate-400">{clearMessage}</p>}
       </section>
 
       <section className="mt-6 flex flex-col gap-2">

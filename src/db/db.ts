@@ -85,3 +85,12 @@ export async function getLastSessionSets(exerciseId: number): Promise<SetEntry[]
     .filter((s) => s.sessionId === lastSessionId)
     .sort((a, b) => a.setNumber - b.setNumber)
 }
+
+// Wipes logged workout history (sessions + sets) only — exercises, routines,
+// and settings are left untouched.
+export async function clearHistory(): Promise<void> {
+  await db.transaction('rw', db.sessions, db.setEntries, async () => {
+    await db.sessions.clear()
+    await db.setEntries.clear()
+  })
+}
