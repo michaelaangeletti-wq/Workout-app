@@ -2,10 +2,6 @@ import { db } from '../db/db'
 import { BODY_PARTS } from '../db/types'
 import type { BodyPart } from '../db/types'
 
-// A commonly-cited weekly landmark for continued growth; used only to scale
-// the muscle map's 0-100% fill, not as prescriptive advice. Easy to retune.
-const WEEKLY_SET_TARGET = 12
-
 export interface SessionStats {
   durationSeconds: number
   volume: number // lb, sum of weight x reps across the session
@@ -41,32 +37,39 @@ export async function getSessionStats(sessionId: number): Promise<SessionStats> 
   return { durationSeconds, volume, prExerciseIds }
 }
 
-export async function getWeeklyActivation(referenceDate: Date = new Date()): Promise<Record<BodyPart, number>> {
+export type MuscleStatus = 'primary' | 'secondary' | 'none'
+
+// For each body part, whether it was trained as a primary mover, only as a
+// secondary/synergist muscle, or not at all, across this calendar week.
+// Primary always wins: if a body part was hit directly by one exercise and
+// only secondarily by another this week, it still reads as primary.
+export async function getWeeklyMuscleStatus(referenceDate: Date = new Date()): Promise<Record<BodyPart, MuscleStatus>> {
   const start = startOfWeek(referenceDate)
   const end = addDays(start, 7)
 
   const [sessions, exercises] = await Promise.all([db.sessions.toArray(), db.exercises.toArray()])
-  const exerciseBodyPart = new Map(exercises.map((e) => [e.id!, e.bodyPart]))
+  const exerciseById = new Map(exercises.map((e) => [e.id!, e]))
 
   const weekSessionIds = new Set(
     sessions.filter((s) => inRange(new Date(s.date), start, end)).map((s) => s.id!),
   )
 
-  const counts = Object.fromEntries(BODY_PARTS.map((bp) => [bp.id, 0])) as Record<BodyPart, number>
+  const status = Object.fromEntries(BODY_PARTS.map((bp) => [bp.id, 'none'])) as Record<BodyPart, MuscleStatus>
   if (weekSessionIds.size > 0) {
     const allSets = await db.setEntries.toArray()
-    for (const set of allSets) {
-      if (!weekSessionIds.has(set.sessionId)) continue
-      const bodyPart = exerciseBodyPart.get(set.exerciseId)
-      if (bodyPart) counts[bodyPart] += 1
+    const loggedExerciseIds = new Set(
+      allSets.filter((s) => weekSessionIds.has(s.sessionId)).map((s) => s.exerciseId),
+    )
+    for (const exerciseId of loggedExerciseIds) {
+      const exercise = exerciseById.get(exerciseId)
+      if (!exercise) continue
+      status[exercise.bodyPart] = 'primary'
+      for (const secondary of exercise.secondaryBodyParts) {
+        if (status[secondary] !== 'primary') status[secondary] = 'secondary'
+      }
     }
   }
-
-  const activation = {} as Record<BodyPart, number>
-  for (const bp of BODY_PARTS) {
-    activation[bp.id] = Math.min(100, Math.round((counts[bp.id] / WEEKLY_SET_TARGET) * 100))
-  }
-  return activation
+  return status
 }
 
 export interface StreakDay {

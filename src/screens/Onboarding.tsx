@@ -217,6 +217,7 @@ function CustomExerciseForm({ bodyPart, onDone }: { bodyPart: BodyPart; onDone: 
     await db.exercises.add({
       name: name.trim(),
       bodyPart,
+      secondaryBodyParts: [],
       equipmentType,
       repRangeMin: 8,
       repRangeMax: 12,

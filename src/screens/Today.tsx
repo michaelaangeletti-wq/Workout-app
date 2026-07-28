@@ -8,7 +8,7 @@ import { recommendNextSession, type Recommendation } from '../lib/recommendation
 import { useWorkoutStore } from '../store/useWorkoutStore'
 import { lbToDisplay } from '../lib/units'
 import { useSettings } from '../db/useSettings'
-import { getWeeklyActivation, getWeekStreak, getPreviousSessionSummary } from '../lib/sessionStats'
+import { getWeeklyMuscleStatus, getWeekStreak, getPreviousSessionSummary } from '../lib/sessionStats'
 import { WeekStreak } from '../components/WeekStreak'
 import { MuscleMap } from '../components/MuscleMap'
 
@@ -31,7 +31,7 @@ export function Today() {
 
   const allExercises = useLiveQuery(() => db.exercises.toArray())
   const routines = useLiveQuery(() => db.routines.orderBy('sortOrder').toArray())
-  const activation = useLiveQuery(() => getWeeklyActivation())
+  const muscleStatus = useLiveQuery(() => getWeeklyMuscleStatus())
   const streakDays = useLiveQuery(() => getWeekStreak())
 
   const favoritesByBodyPart = groupFavorites(allExercises)
@@ -81,7 +81,7 @@ export function Today() {
     [selected?.label],
   )
 
-  if (allExercises === undefined || !settings || !activation || !streakDays) {
+  if (allExercises === undefined || !settings || !muscleStatus || !streakDays) {
     return null
   }
 
@@ -131,7 +131,7 @@ export function Today() {
       </div>
 
       <div className="mt-4">
-        <MuscleMap activation={activation} />
+        <MuscleMap status={muscleStatus} />
       </div>
 
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">

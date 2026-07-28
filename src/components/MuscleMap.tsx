@@ -1,102 +1,124 @@
 import { BODY_PARTS } from '../db/types'
 import type { BodyPart } from '../db/types'
+import type { MuscleStatus } from '../lib/sessionStats'
 
 interface MuscleMapProps {
-  activation: Record<BodyPart, number>
+  status: Record<BodyPart, MuscleStatus>
 }
 
 type Shape =
   | { kind: 'rect'; x: number; y: number; width: number; height: number; rx: number }
   | { kind: 'ellipse'; cx: number; cy: number; rx: number; ry: number }
 
-const NEUTRAL_FILL = '#1e293b' // slate-800 — reads as "unworked," recedes into the card
-const FULL_FILL = [56, 189, 248] as const // sky-400, rgb
+// One hue, three steps: untrained recedes into the figure, secondary is a
+// light tint, primary is the app's full accent. Same hue throughout, since
+// this is an ordered scale (how directly a muscle was trained), not
+// unrelated categories.
+const STATUS_FILL: Record<MuscleStatus, string> = {
+  none: '#334155', // slate-600 — visibly a body, but recedes under a trained zone
+  secondary: '#7dd3fc', // sky-300 — light blue
+  primary: '#0ea5e9', // sky-500 — dark blue
+}
 
-// An original, stylized block figure — not an anatomical illustration — split
-// into Lift Plan's 9 body-part zones. Front and back together cover all 9,
+// An original, stylized figure — not an anatomical illustration — split into
+// Lift Plan's 9 body-part zones. Adjacent shapes overlap on purpose (drawn
+// in order, back to front) so the figure reads as one connected body instead
+// of separate floating blocks. Front and back together cover all 9 zones,
 // each exactly once.
 const FRONT_ZONES: { bodyPart: BodyPart; shapes: Shape[] }[] = [
-  {
-    bodyPart: 'shoulders',
-    shapes: [
-      { kind: 'rect', x: 48, y: 64, width: 34, height: 26, rx: 13 },
-      { kind: 'rect', x: 118, y: 64, width: 34, height: 26, rx: 13 },
-    ],
-  },
-  { bodyPart: 'chest', shapes: [{ kind: 'rect', x: 76, y: 70, width: 48, height: 50, rx: 10 }] },
+  { bodyPart: 'shoulders', shapes: [{ kind: 'rect', x: 40, y: 74, width: 120, height: 34, rx: 17 }] },
+  { bodyPart: 'chest', shapes: [{ kind: 'rect', x: 66, y: 92, width: 68, height: 62, rx: 14 }] },
   {
     bodyPart: 'biceps',
     shapes: [
-      { kind: 'rect', x: 30, y: 90, width: 22, height: 70, rx: 11 },
-      { kind: 'rect', x: 148, y: 90, width: 22, height: 70, rx: 11 },
+      { kind: 'rect', x: 32, y: 100, width: 30, height: 90, rx: 15 },
+      { kind: 'rect', x: 138, y: 100, width: 30, height: 90, rx: 15 },
     ],
   },
-  { bodyPart: 'core', shapes: [{ kind: 'rect', x: 78, y: 122, width: 44, height: 58, rx: 10 }] },
+  { bodyPart: 'core', shapes: [{ kind: 'rect', x: 70, y: 140, width: 60, height: 70, rx: 14 }] },
   {
     bodyPart: 'quads',
     shapes: [
-      { kind: 'rect', x: 64, y: 182, width: 32, height: 90, rx: 14 },
-      { kind: 'rect', x: 104, y: 182, width: 32, height: 90, rx: 14 },
+      { kind: 'rect', x: 62, y: 200, width: 38, height: 110, rx: 18 },
+      { kind: 'rect', x: 100, y: 200, width: 38, height: 110, rx: 18 },
     ],
   },
 ]
 
 const FRONT_NEUTRAL: Shape[] = [
-  { kind: 'ellipse', cx: 100, cy: 32, rx: 20, ry: 20 },
-  { kind: 'rect', x: 92, y: 50, width: 16, height: 14, rx: 4 },
-  { kind: 'rect', x: 26, y: 160, width: 20, height: 60, rx: 10 },
-  { kind: 'rect', x: 154, y: 160, width: 20, height: 60, rx: 10 },
-  { kind: 'ellipse', cx: 36, cy: 228, rx: 10, ry: 10 },
-  { kind: 'ellipse', cx: 164, cy: 228, rx: 10, ry: 10 },
-  { kind: 'rect', x: 66, y: 274, width: 28, height: 80, rx: 12 },
-  { kind: 'rect', x: 106, y: 274, width: 28, height: 80, rx: 12 },
-  { kind: 'ellipse', cx: 80, cy: 364, rx: 18, ry: 10 },
-  { kind: 'ellipse', cx: 120, cy: 364, rx: 18, ry: 10 },
+  { kind: 'ellipse', cx: 100, cy: 40, rx: 26, ry: 26 },
+  { kind: 'rect', x: 88, y: 62, width: 24, height: 18, rx: 6 },
+  { kind: 'rect', x: 28, y: 182, width: 26, height: 70, rx: 13 },
+  { kind: 'rect', x: 146, y: 182, width: 26, height: 70, rx: 13 },
+  { kind: 'ellipse', cx: 41, cy: 256, rx: 13, ry: 13 },
+  { kind: 'ellipse', cx: 159, cy: 256, rx: 13, ry: 13 },
+  { kind: 'rect', x: 66, y: 300, width: 32, height: 100, rx: 14 },
+  { kind: 'rect', x: 102, y: 300, width: 32, height: 100, rx: 14 },
+  { kind: 'ellipse', cx: 82, cy: 404, rx: 22, ry: 12 },
+  { kind: 'ellipse', cx: 118, cy: 404, rx: 22, ry: 12 },
 ]
 
 const BACK_ZONES: { bodyPart: BodyPart; shapes: Shape[] }[] = [
-  { bodyPart: 'back', shapes: [{ kind: 'rect', x: 54, y: 64, width: 92, height: 90, rx: 16 }] },
+  {
+    bodyPart: 'back',
+    shapes: [
+      { kind: 'rect', x: 40, y: 74, width: 120, height: 80, rx: 18 },
+      { kind: 'rect', x: 66, y: 140, width: 68, height: 76, rx: 14 },
+    ],
+  },
   {
     bodyPart: 'triceps',
     shapes: [
-      { kind: 'rect', x: 30, y: 90, width: 22, height: 70, rx: 11 },
-      { kind: 'rect', x: 148, y: 90, width: 22, height: 70, rx: 11 },
+      { kind: 'rect', x: 32, y: 100, width: 30, height: 90, rx: 15 },
+      { kind: 'rect', x: 138, y: 100, width: 30, height: 90, rx: 15 },
     ],
   },
-  { bodyPart: 'hamstrings-glutes', shapes: [{ kind: 'rect', x: 60, y: 156, width: 80, height: 110, rx: 18 }] },
+  { bodyPart: 'hamstrings-glutes', shapes: [{ kind: 'rect', x: 58, y: 200, width: 84, height: 120, rx: 20 }] },
   {
     bodyPart: 'calves',
     shapes: [
-      { kind: 'rect', x: 66, y: 274, width: 28, height: 80, rx: 12 },
-      { kind: 'rect', x: 106, y: 274, width: 28, height: 80, rx: 12 },
+      { kind: 'rect', x: 66, y: 300, width: 32, height: 100, rx: 14 },
+      { kind: 'rect', x: 102, y: 300, width: 32, height: 100, rx: 14 },
     ],
   },
 ]
 
 const BACK_NEUTRAL: Shape[] = [
-  { kind: 'ellipse', cx: 100, cy: 32, rx: 20, ry: 20 },
-  { kind: 'rect', x: 92, y: 50, width: 16, height: 14, rx: 4 },
-  { kind: 'rect', x: 26, y: 160, width: 20, height: 60, rx: 10 },
-  { kind: 'rect', x: 154, y: 160, width: 20, height: 60, rx: 10 },
-  { kind: 'ellipse', cx: 36, cy: 228, rx: 10, ry: 10 },
-  { kind: 'ellipse', cx: 164, cy: 228, rx: 10, ry: 10 },
-  { kind: 'ellipse', cx: 80, cy: 364, rx: 18, ry: 10 },
-  { kind: 'ellipse', cx: 120, cy: 364, rx: 18, ry: 10 },
+  { kind: 'ellipse', cx: 100, cy: 40, rx: 26, ry: 26 },
+  { kind: 'rect', x: 88, y: 62, width: 24, height: 18, rx: 6 },
+  { kind: 'rect', x: 28, y: 182, width: 26, height: 70, rx: 13 },
+  { kind: 'rect', x: 146, y: 182, width: 26, height: 70, rx: 13 },
+  { kind: 'ellipse', cx: 41, cy: 256, rx: 13, ry: 13 },
+  { kind: 'ellipse', cx: 159, cy: 256, rx: 13, ry: 13 },
+  { kind: 'ellipse', cx: 82, cy: 404, rx: 22, ry: 12 },
+  { kind: 'ellipse', cx: 118, cy: 404, rx: 22, ry: 12 },
 ]
 
-export function MuscleMap({ activation }: MuscleMapProps) {
+export function MuscleMap({ status }: MuscleMapProps) {
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3">
-      <div className="text-xs uppercase tracking-wide text-slate-500">Muscles worked this week</div>
-      <div className="mt-2 flex justify-center gap-6">
-        <Figure label="Front" zones={FRONT_ZONES} neutral={FRONT_NEUTRAL} activation={activation} />
-        <Figure label="Back" zones={BACK_ZONES} neutral={BACK_NEUTRAL} activation={activation} />
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wide text-slate-500">Muscles worked this week</span>
+        <div className="flex items-center gap-3 text-[10px] text-slate-500">
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_FILL.primary }} />
+            Primary
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: STATUS_FILL.secondary }} />
+            Secondary
+          </span>
+        </div>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-x-2 gap-y-1">
+      <div className="mt-2 flex justify-center gap-8">
+        <Figure label="Front" zones={FRONT_ZONES} neutral={FRONT_NEUTRAL} status={status} />
+        <Figure label="Back" zones={BACK_ZONES} neutral={BACK_NEUTRAL} status={status} />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1">
         {BODY_PARTS.map((bp) => (
           <div key={bp.id} className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: fillFor(activation[bp.id]) }} />
-            <span className="truncate">{bp.label}</span>
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: STATUS_FILL[status[bp.id]] }} />
+            <span>{bp.label}</span>
           </div>
         ))}
       </div>
@@ -108,22 +130,22 @@ function Figure({
   label,
   zones,
   neutral,
-  activation,
+  status,
 }: {
   label: string
   zones: { bodyPart: BodyPart; shapes: Shape[] }[]
   neutral: Shape[]
-  activation: Record<BodyPart, number>
+  status: Record<BodyPart, MuscleStatus>
 }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <svg viewBox="0 0 200 400" className="h-40 w-20">
+      <svg viewBox="0 0 200 440" className="h-52 w-24">
         {neutral.map((shape, i) => (
-          <ShapeEl key={`neutral-${i}`} shape={shape} fill={NEUTRAL_FILL} />
+          <ShapeEl key={`neutral-${i}`} shape={shape} fill={STATUS_FILL.none} />
         ))}
         {zones.map(({ bodyPart, shapes }) =>
           shapes.map((shape, i) => (
-            <ShapeEl key={`${bodyPart}-${i}`} shape={shape} fill={fillFor(activation[bodyPart])} />
+            <ShapeEl key={`${bodyPart}-${i}`} shape={shape} fill={STATUS_FILL[status[bodyPart]]} />
           )),
         )}
       </svg>
@@ -137,22 +159,4 @@ function ShapeEl({ shape, fill }: { shape: Shape; fill: string }) {
     return <rect x={shape.x} y={shape.y} width={shape.width} height={shape.height} rx={shape.rx} fill={fill} />
   }
   return <ellipse cx={shape.cx} cy={shape.cy} rx={shape.rx} ry={shape.ry} fill={fill} />
-}
-
-function fillFor(activationPct: number | undefined): string {
-  const pct = clamp((activationPct ?? 0) / 100, 0, 1)
-  const neutral = hexToRgb(NEUTRAL_FILL)
-  const r = Math.round(neutral[0] + (FULL_FILL[0] - neutral[0]) * pct)
-  const g = Math.round(neutral[1] + (FULL_FILL[1] - neutral[1]) * pct)
-  const b = Math.round(neutral[2] + (FULL_FILL[2] - neutral[2]) * pct)
-  return `rgb(${r}, ${g}, ${b})`
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, v))
 }

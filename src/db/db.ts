@@ -1,7 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { AppSettings, BodyPart, Exercise, Routine, Session, SetEntry } from './types'
 import { BODY_PARTS } from './types'
-import { buildDefaultCatalog } from './catalog'
+import { buildDefaultCatalog, getDefaultSecondaryBodyParts } from './catalog'
 
 const EMPTY_WEEK_SCHEDULE: (number | null)[] = [null, null, null, null, null, null, null]
 
@@ -51,6 +51,26 @@ class LiftPlanDB extends Dexie {
           .toCollection()
           .modify((s: AppSettings) => {
             if (!s.weeklySchedule) s.weeklySchedule = [...EMPTY_WEEK_SCHEDULE]
+          })
+      })
+
+    // v3: exercises gain secondaryBodyParts (synergist muscles), used to
+    // color the muscle map light blue vs dark blue. Backfill known catalog
+    // exercises by name; custom exercises default to no secondary muscles.
+    this.version(3)
+      .stores({
+        exercises: '++id, bodyPart, isFavorite, sortOrder',
+        sessions: '++id, date',
+        setEntries: '++id, sessionId, exerciseId, [exerciseId+sessionId]',
+        settings: 'id',
+        routines: '++id, sortOrder',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('exercises')
+          .toCollection()
+          .modify((ex: Exercise) => {
+            if (!ex.secondaryBodyParts) ex.secondaryBodyParts = getDefaultSecondaryBodyParts(ex.name)
           })
       })
   }

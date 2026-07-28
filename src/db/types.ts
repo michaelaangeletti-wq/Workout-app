@@ -43,7 +43,8 @@ export const EQUIPMENT_DEFAULT_WEIGHT: Record<EquipmentType, number> = {
 export interface Exercise {
   id?: number
   name: string
-  bodyPart: BodyPart
+  bodyPart: BodyPart // the primary muscle this exercise trains
+  secondaryBodyParts: BodyPart[] // synergist muscles also worked, e.g. Bench Press -> shoulders, triceps
   equipmentType: EquipmentType
   repRangeMin: number
   repRangeMax: number

@@ -255,12 +255,39 @@ function BodyPartEditor({ bodyPart, exercises }: { bodyPart: BodyPart; exercises
 
 function ExerciseFieldsEditor({ exercise }: { exercise: Exercise }) {
   const update = (patch: Partial<Exercise>) => db.exercises.update(exercise.id!, patch)
+
+  const toggleSecondary = (bp: BodyPart) => {
+    const current = exercise.secondaryBodyParts
+    const next = current.includes(bp) ? current.filter((b) => b !== bp) : [...current, bp]
+    update({ secondaryBodyParts: next })
+  }
+
   return (
-    <div className="mt-2 grid grid-cols-2 gap-2 border-t border-sky-500/20 pt-2 text-xs">
-      <Field label="Rep min" value={exercise.repRangeMin} onChange={(v) => update({ repRangeMin: v })} />
-      <Field label="Rep max" value={exercise.repRangeMax} onChange={(v) => update({ repRangeMax: v })} />
-      <Field label="Weight step (lb)" value={exercise.weightIncrement} onChange={(v) => update({ weightIncrement: v })} />
-      <Field label="Sets" value={exercise.targetSets} onChange={(v) => update({ targetSets: v })} />
+    <div className="mt-2 border-t border-sky-500/20 pt-2 text-xs">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Rep min" value={exercise.repRangeMin} onChange={(v) => update({ repRangeMin: v })} />
+        <Field label="Rep max" value={exercise.repRangeMax} onChange={(v) => update({ repRangeMax: v })} />
+        <Field label="Weight step (lb)" value={exercise.weightIncrement} onChange={(v) => update({ weightIncrement: v })} />
+        <Field label="Sets" value={exercise.targetSets} onChange={(v) => update({ targetSets: v })} />
+      </div>
+
+      <div className="mt-2">
+        <div className="text-slate-500">Also works (secondary, shows light blue on the muscle map)</div>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {BODY_PARTS.filter((bp) => bp.id !== exercise.bodyPart).map((bp) => (
+            <button
+              key={bp.id}
+              type="button"
+              onClick={() => toggleSecondary(bp.id)}
+              className={`rounded-full px-2.5 py-1 font-medium ${
+                exercise.secondaryBodyParts.includes(bp.id) ? 'bg-sky-500/20 text-sky-300' : 'bg-slate-800 text-slate-400'
+              }`}
+            >
+              {bp.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -292,6 +319,7 @@ function CustomExerciseForm({ bodyPart, onDone }: { bodyPart: BodyPart; onDone: 
     await db.exercises.add({
       name: name.trim(),
       bodyPart,
+      secondaryBodyParts: [],
       equipmentType,
       repRangeMin: 8,
       repRangeMax: 12,

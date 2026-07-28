@@ -11,31 +11,32 @@ const DEFAULTS: Record<EquipmentType, { repMin: number; repMax: number; incremen
   bodyweight: { repMin: 8, repMax: 15, increment: 5 },
 }
 
-type CatalogEntry = [name: string, equipmentType: EquipmentType]
+// [name, equipment, secondary/synergist muscles also worked]
+type CatalogEntry = [name: string, equipmentType: EquipmentType, secondary?: BodyPart[]]
 
 const CATALOG: Record<BodyPart, CatalogEntry[]> = {
   chest: [
-    ['Barbell Bench Press', 'barbell'],
-    ['Incline Dumbbell Press', 'dumbbell'],
-    ['Flat Dumbbell Press', 'dumbbell'],
-    ['Cable Fly', 'cable'],
-    ['Machine Chest Press', 'machine'],
-    ['Push-Up', 'bodyweight'],
+    ['Barbell Bench Press', 'barbell', ['shoulders', 'triceps']],
+    ['Incline Dumbbell Press', 'dumbbell', ['shoulders', 'triceps']],
+    ['Flat Dumbbell Press', 'dumbbell', ['shoulders', 'triceps']],
+    ['Cable Fly', 'cable', ['shoulders']],
+    ['Machine Chest Press', 'machine', ['shoulders', 'triceps']],
+    ['Push-Up', 'bodyweight', ['shoulders', 'triceps', 'core']],
   ],
   back: [
-    ['Deadlift', 'barbell'],
-    ['Barbell Row', 'barbell'],
-    ['Lat Pulldown', 'cable'],
-    ['Seated Cable Row', 'cable'],
-    ['Dumbbell Row', 'dumbbell'],
-    ['Pull-Up', 'bodyweight'],
+    ['Deadlift', 'barbell', ['hamstrings-glutes', 'core']],
+    ['Barbell Row', 'barbell', ['biceps']],
+    ['Lat Pulldown', 'cable', ['biceps']],
+    ['Seated Cable Row', 'cable', ['biceps']],
+    ['Dumbbell Row', 'dumbbell', ['biceps']],
+    ['Pull-Up', 'bodyweight', ['biceps']],
   ],
   shoulders: [
-    ['Overhead Press', 'barbell'],
-    ['Dumbbell Shoulder Press', 'dumbbell'],
+    ['Overhead Press', 'barbell', ['triceps', 'core']],
+    ['Dumbbell Shoulder Press', 'dumbbell', ['triceps']],
     ['Lateral Raise', 'dumbbell'],
-    ['Face Pull', 'cable'],
-    ['Machine Shoulder Press', 'machine'],
+    ['Face Pull', 'cable', ['back']],
+    ['Machine Shoulder Press', 'machine', ['triceps']],
   ],
   biceps: [
     ['Barbell Curl', 'barbell'],
@@ -45,25 +46,25 @@ const CATALOG: Record<BodyPart, CatalogEntry[]> = {
     ['Preacher Curl', 'machine'],
   ],
   triceps: [
-    ['Close-Grip Bench Press', 'barbell'],
+    ['Close-Grip Bench Press', 'barbell', ['chest', 'shoulders']],
     ['Triceps Pushdown', 'cable'],
     ['Overhead Triceps Extension', 'dumbbell'],
     ['Skull Crusher', 'barbell'],
-    ['Dip', 'bodyweight'],
+    ['Dip', 'bodyweight', ['chest', 'shoulders']],
   ],
   quads: [
-    ['Back Squat', 'barbell'],
-    ['Front Squat', 'barbell'],
-    ['Leg Press', 'machine'],
+    ['Back Squat', 'barbell', ['hamstrings-glutes', 'core']],
+    ['Front Squat', 'barbell', ['hamstrings-glutes', 'core']],
+    ['Leg Press', 'machine', ['hamstrings-glutes']],
     ['Leg Extension', 'machine'],
-    ['Walking Lunge', 'dumbbell'],
+    ['Walking Lunge', 'dumbbell', ['hamstrings-glutes', 'core']],
   ],
   'hamstrings-glutes': [
-    ['Romanian Deadlift', 'barbell'],
-    ['Hip Thrust', 'barbell'],
+    ['Romanian Deadlift', 'barbell', ['back', 'core']],
+    ['Hip Thrust', 'barbell', ['core']],
     ['Leg Curl', 'machine'],
-    ['Cable Pull-Through', 'cable'],
-    ['Glute Bridge', 'bodyweight'],
+    ['Cable Pull-Through', 'cable', ['back']],
+    ['Glute Bridge', 'bodyweight', ['core']],
   ],
   calves: [
     ['Standing Calf Raise', 'machine'],
@@ -73,20 +74,31 @@ const CATALOG: Record<BodyPart, CatalogEntry[]> = {
   core: [
     ['Cable Crunch', 'cable'],
     ['Hanging Leg Raise', 'bodyweight'],
-    ['Ab Wheel Rollout', 'bodyweight'],
+    ['Ab Wheel Rollout', 'bodyweight', ['shoulders']],
     ['Weighted Russian Twist', 'dumbbell'],
-    ['Plank', 'bodyweight'],
+    ['Plank', 'bodyweight', ['shoulders']],
   ],
+}
+
+// Used by the Dexie migration to backfill secondary muscles onto exercises
+// that were seeded before this field existed, matching by name.
+export function getDefaultSecondaryBodyParts(name: string): BodyPart[] {
+  for (const bodyPart of Object.keys(CATALOG) as BodyPart[]) {
+    const entry = CATALOG[bodyPart].find(([entryName]) => entryName === name)
+    if (entry) return entry[2] ?? []
+  }
+  return []
 }
 
 export function buildDefaultCatalog(): Omit<Exercise, 'id'>[] {
   const exercises: Omit<Exercise, 'id'>[] = []
   for (const bodyPart of Object.keys(CATALOG) as BodyPart[]) {
-    CATALOG[bodyPart].forEach(([name, equipmentType], index) => {
+    CATALOG[bodyPart].forEach(([name, equipmentType, secondary], index) => {
       const d = DEFAULTS[equipmentType]
       exercises.push({
         name,
         bodyPart,
+        secondaryBodyParts: secondary ?? [],
         equipmentType,
         repRangeMin: d.repMin,
         repRangeMax: d.repMax,
